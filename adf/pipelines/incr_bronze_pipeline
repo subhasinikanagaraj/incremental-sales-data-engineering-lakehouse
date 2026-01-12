@@ -1,0 +1,136 @@
+{
+    "name": "incr_bronze_pipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "Copy_incr_data",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "last_load",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "end_dt",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT * FROM dbo.src_car_sales WHERE Date_ID > '@{activity('last_load').output.value[0].last_load_dt}' AND Date_ID <= '@{activity('end_dt').output.value[0].END_DT}'",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                            "type": "AzureBlobFSWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "ParquetWriteSettings"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "ds_azure_sqltbl",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "table_name": "src_car_sales"
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "ds_bronze",
+                        "type": "DatasetReference"
+                    }
+                ]
+            },
+            {
+                "name": "last_load",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "select * from watermark_tbl",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_azure_sqltbl",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "table_name": "watermark_tbl"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "end_dt",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT max(Date_ID) as END_DT FROM dbo.src_car_sales",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_azure_sqltbl",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "table_name": "src_car_sales"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            }
+        ],
+        "annotations": []
+    }
+}
