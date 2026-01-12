@@ -1,0 +1,19 @@
+{
+    "name": "ds_bronze",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_dl_bronze",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileSystem": "bronze"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    }
+}
