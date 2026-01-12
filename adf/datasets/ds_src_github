@@ -1,0 +1,30 @@
+{
+    "name": "ds_src_github",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_git_hub",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "load_flag": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "HttpServerLocation",
+                "relativeUrl": {
+                    "value": "subhasinikanagaraj/incremental-sales-data-engineering-lakehouse/refs/heads/main/Raw/@{dataset().load_flag}",
+                    "type": "Expression"
+                }
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    }
+}
