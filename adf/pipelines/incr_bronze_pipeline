@@ -129,6 +129,42 @@
                     },
                     "firstRowOnly": false
                 }
+            },
+            {
+                "name": "proc_update_watermark",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Copy_incr_data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[update_watermark_tbl]",
+                    "storedProcedureParameters": {
+                        "last_load": {
+                            "value": {
+                                "value": "@activity('end_dt').output.value[0].END_DT",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "ls_azure_sqldb",
+                    "type": "LinkedServiceReference"
+                }
             }
         ],
         "annotations": []
