@@ -5,66 +5,20 @@
             "referenceName": "ls_azure_sqldb",
             "type": "LinkedServiceReference"
         },
+        "parameters": {
+            "table_name": {
+                "type": "string"
+            }
+        },
         "annotations": [],
         "type": "AzureSqlTable",
-        "schema": [
-            {
-                "name": "Branch_ID",
-                "type": "varchar"
-            },
-            {
-                "name": "Dealer_ID",
-                "type": "varchar"
-            },
-            {
-                "name": "Model_ID",
-                "type": "varchar"
-            },
-            {
-                "name": "Revenue",
-                "type": "bigint",
-                "precision": 19
-            },
-            {
-                "name": "Units_Sold",
-                "type": "bigint",
-                "precision": 19
-            },
-            {
-                "name": "Date_ID",
-                "type": "varchar"
-            },
-            {
-                "name": "Day",
-                "type": "int",
-                "precision": 10
-            },
-            {
-                "name": "Month",
-                "type": "int",
-                "precision": 10
-            },
-            {
-                "name": "Year",
-                "type": "int",
-                "precision": 10
-            },
-            {
-                "name": "BranchName",
-                "type": "varchar"
-            },
-            {
-                "name": "DealerName",
-                "type": "varchar"
-            },
-            {
-                "name": "Product_Name",
-                "type": "varchar"
-            }
-        ],
+        "schema": [],
         "typeProperties": {
             "schema": "dbo",
-            "table": "src_car_sales"
+            "table": {
+                "value": "@dataset().table_name",
+                "type": "Expression"
+            }
         }
     }
 }
