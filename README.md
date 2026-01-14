@@ -72,6 +72,3 @@ Build **SCD-Type 1** dimensions
 - adf
 - databricks
 
-
-- Reads Silver watermark from Delta.
-- Filters Bronze using:
