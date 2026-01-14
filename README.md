@@ -1,5 +1,4 @@
-# incremental-sales-data-engineering-lakehouse
-# CarSales Medallion Architecture — End‑to‑End Incremental Pipeline
+# CarSales Medallion Architecture — End‑to‑End Data Engineering Incremental Pipeline
 
 This repository contains a complete data engineering pipeline for **CarSales** data, built using the **Medallion Architecture** (Bronze → Silver → Gold).  
 The pipeline supports both **initial loads** and **incremental loads**, transforming raw CSV files into a fully modeled **star schema** stored as Delta tables.
@@ -68,7 +67,7 @@ Build **SCD-Type 1** dimensions
 
 ## Repository Structure
 
-- SQL DB
+- AzureSQLDB
 - adf
 - databricks
 
