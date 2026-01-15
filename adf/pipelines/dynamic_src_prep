@@ -1,0 +1,302 @@
+{
+    "name": "dynamic_src_prep",
+    "properties": {
+        "activities": [
+            {
+                "name": "GetFilesFromGit",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "GET",
+                    "url": "https://api.github.com/repos/subhasinikanagaraj/incremental-sales-data-engineering-lakehouse/contents/Raw"
+                }
+            },
+            {
+                "name": "GetGitFiles",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "GetFilesFromGit",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "GetFiles",
+                    "value": {
+                        "value": "@json(activity('GetFilesFromGit').output.Response)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "LoopEachFile",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "FilterNewFiles",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('FilterNewFiles').output.Value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "CopyfilefromGittoSQLDB",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "DelimitedTextSource",
+                                    "storeSettings": {
+                                        "type": "HttpReadSettings",
+                                        "requestMethod": "GET"
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextReadSettings"
+                                    }
+                                },
+                                "sink": {
+                                    "type": "AzureSqlSink",
+                                    "writeBehavior": "insert",
+                                    "sqlWriterUseTableLock": false,
+                                    "disableMetricsCollection": false
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_src_github",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "load_flag": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "ds_azure_sqltbl",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "table_name": "src_car_sales"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "InsertFileInWatremark",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "CopyfilefromGittoSQLDB",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[dbo].[InsertWatermark]",
+                                "storedProcedureParameters": {
+                                    "FileName": {
+                                        "value": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "ls_azure_sqldb",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "LookUpLoadedFiles",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT FileName FROM dbo.FileWatermark;\n",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_azure_sqltbl",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "table_name": "FileWatermark"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "FilterNewFiles",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "GetGitFiles",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "ForEach1",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@variables('GetFiles')",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@not(contains(variables('LoadedFiles'),item().name))",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "LookUpLoadedFiles",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('LookUpLoadedFiles').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "AddFileNametoArray",
+                            "type": "AppendVariable",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "LoadedFiles",
+                                "value": {
+                                    "value": "@item().FileName",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "displayAppendVar",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "AddFileNametoArray",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "FileNames",
+                                "value": {
+                                    "value": "@variables('LoadedFiles')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "GetFiles": {
+                "type": "Array"
+            },
+            "LoadedFiles": {
+                "type": "Array",
+                "defaultValue": []
+            },
+            "FileName": {
+                "type": "String"
+            },
+            "FileNames": {
+                "type": "Array"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-01-12T19:28:34Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}
