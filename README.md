@@ -79,6 +79,7 @@ Build **SCD-Type 1** dimensions
 ---
 ## Data Pipeline Flowchart
 
+```
 GitHub (Raw CSV Files)
           │
           ▼
@@ -114,7 +115,7 @@ Azure SQL (Source Table)
  Delta Tables (Star Schema)
  - SCD1 Dimensions (MERGE)
  - fact_sales (MERGE)
-
+```
 
 ## Repository Structure
 
